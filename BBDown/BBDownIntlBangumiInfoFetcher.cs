@@ -98,12 +98,14 @@ namespace BBDown
                 catch (Exception) { }
                 string _title = page.GetProperty("title").ToString() + " " + page.GetProperty("long_title").ToString();
                 _title = _title.Trim();
+                string aid = page.GetProperty("aid").ToString();
                 Page p = new Page(i++,
-                    page.GetProperty("aid").ToString(),
+                    aid,
                     page.GetProperty("cid").ToString(),
                     page.GetProperty("id").ToString(),
                     _title,
-                    0, res);
+                    0, res,
+                    $"https://b23.tv/av{aid}");
                 if (p.epid == id) index = p.index.ToString();
                 pagesInfo.Add(p);
             }

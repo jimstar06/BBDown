@@ -444,9 +444,11 @@ namespace BBDown
                 if (string.IsNullOrEmpty(aidOri)) throw new Exception("输入有误");
                 Log("获取视频信息...");
                 IFetcher fetcher = new BBDownNormalInfoFetcher();
+                string sourceUrl = $"https://b23.tv/av{aidOri}";
                 if (aidOri.StartsWith("cheese"))
                 {
                     fetcher = new BBDownCheeseInfoFetcher();
+                    sourceUrl = $"https://www.bilibili.com/cheese/play/ep{aidOri.Substring(7)}";
                 }
                 else if (aidOri.StartsWith("ep"))
                 {
@@ -454,16 +456,21 @@ namespace BBDown
                         fetcher = new BBDownIntlBangumiInfoFetcher();
                     else
                         fetcher = new BBDownBangumiInfoFetcher();
+                    sourceUrl = $"https://b23.tv/ep{aidOri.Substring(3)}";
                 }
                 else if (aidOri.StartsWith("mid"))
                 {
                     fetcher = new BBDownSpaceVideoFetcher();
+                    sourceUrl = "";
                 }
                 var vInfo = await fetcher.FetchAsync(aidOri);
+                string bvid = vInfo.Bvid;
                 string title = vInfo.Title;
                 string desc = vInfo.Desc;
                 string pic = vInfo.Pic;
                 string pubTime = vInfo.PubTime;
+                string ownerMid = vInfo.OwnerMid;
+                string ownerName = vInfo.OwnerName;
                 LogColor("视频标题: " + title);
                 Log("发布时间: " + pubTime);
                 List<Page> pagesInfo = vInfo.PagesInfo;
@@ -471,6 +478,14 @@ namespace BBDown
                 bool more = false;
                 bool bangumi = vInfo.IsBangumi;
                 bool cheese = vInfo.IsCheese;
+
+                var commentBuilder = new StringBuilder();
+                if (vInfo.Staff != null)
+                    foreach (var member in vInfo.Staff)
+                        commentBuilder.Append($"{member.Title}: {member.Name}({member.Mid}) ");
+                commentBuilder.Append($"Source: {sourceUrl}");
+                string comment = commentBuilder.ToString();
+                LogColor(comment);
 
                 //打印分P信息
                 foreach (Page p in pagesInfo)
@@ -483,7 +498,7 @@ namespace BBDown
                     }
                     else
                     {
-                        Log($"P{p.index}: [{p.cid}] [{p.title}] [{FormatTime(p.dur)}]");
+                        Log($"P{p.index}: [{p.cid}] [{p.title}] [{FormatTime(p.dur)}][{p.sourceUrl}]");
                     }
                 }
 
@@ -519,7 +534,7 @@ namespace BBDown
                     string indexStr = myOption.NoPaddingPageNum ? p.index.ToString() : p.index.ToString("0".PadRight(pagesInfo.OrderByDescending(_p => _p.index).First().index.ToString().Length, '0'));
                     string videoPath = $"{p.aid}/{p.aid}.P{indexStr}.{p.cid}.mp4";
                     string audioPath = $"{p.aid}/{p.aid}.P{indexStr}.{p.cid}.m4a";
-
+                    
                     //处理文件夹以.结尾导致的异常情况
                     if (title.EndsWith(".")) title += "_fix";
                     string outPath = GetValidFileName(title) + (pagesInfo.Count > 1 ? $"/[P{indexStr}]{GetValidFileName(p.title)}" : (vInfo.PagesInfo.Count > 1 ? $"[P{indexStr}]{GetValidFileName(p.title)}" : "")) + ".mp4";
@@ -717,6 +732,7 @@ namespace BBDown
                         Log("开始合并音视频" + (subtitleInfo.Count > 0 ? "和字幕" : "") + "...");
                         int code = MuxAV(useMp4box, videoPath, audioPath, outPath,
                             desc,
+                            comment,
                             title,
                             vInfo.PagesInfo.Count > 1 ? ($"P{indexStr}.{p.title}") : "",
                             File.Exists($"{p.aid}/{p.aid}.jpg") ? $"{p.aid}/{p.aid}.jpg" : "",
@@ -811,6 +827,7 @@ namespace BBDown
                         Log("开始混流视频" + (subtitleInfo.Count > 0 ? "和字幕" : "") + "...");
                         int code = MuxAV(false, videoPath, "", outPath,
                             desc,
+                            comment,
                             title,
                             vInfo.PagesInfo.Count > 1 ? ($"P{indexStr}.{p.title}") : "",
                             File.Exists($"{p.aid}/{p.aid}.jpg") ? $"{p.aid}/{p.aid}.jpg" : "",

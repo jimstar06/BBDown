@@ -26,12 +26,14 @@ namespace BBDown
             List<Page> pagesInfo = new List<Page>();
             foreach (var page in pages)
             {
+                string aid = page.GetProperty("aid").ToString();
                 Page p = new Page(page.GetProperty("index").GetInt32(),
-                    page.GetProperty("aid").ToString(),
+                    aid,
                     page.GetProperty("cid").ToString(),
                     page.GetProperty("id").ToString(),
                     page.GetProperty("title").ToString().Trim(),
-                    page.GetProperty("duration").GetInt32(), "");
+                    page.GetProperty("duration").GetInt32(), "",
+                    $"https://b23.tv/av{aid}");
                 if (p.epid == id) index = p.index.ToString();
                 pagesInfo.Add(p);
             }
